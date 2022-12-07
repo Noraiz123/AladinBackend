@@ -18,7 +18,7 @@ const verifyEmailAddress = async (req, res) => {
       subject: 'Email Activation',
       subject: 'Verify Your Email',
       html: `<h2>Hello ${req.body.email}</h2>
-      <p>Verify your email address to complete the signup and login into your <strong>KachaBazar</strong> account.</p>
+      <p>Verify your email address to complete the signup and login into your <strong>Aladdin</strong> account.</p>
 
         <p>This link will expire in <strong> 15 minute</strong>.</p>
 
@@ -29,7 +29,7 @@ const verifyEmailAddress = async (req, res) => {
         <p style="margin-top: 35px;">If you did not initiate this request, please contact us immediately at support@kachabazar.com</p>
 
         <p style="margin-bottom:0px;">Thank you</p>
-        <strong>Kachabazar Team</strong>
+        <strong>Team Aladdin</strong>
              `,
     };
 
@@ -40,7 +40,7 @@ const verifyEmailAddress = async (req, res) => {
 
 const registerUser = async (req, res) => {
   const token = req.params.token;
-  if(token === "undefined") return res.status(400).send("Please send a valid token")
+  if (token === 'undefined') return res.status(400).send('Please send a valid token');
   const { name, email, password } = jwt.decode(token);
   const isAdded = await User.findOne({ email: email });
 
@@ -73,7 +73,7 @@ const registerUser = async (req, res) => {
           _id: newUser._id,
           name: newUser.name,
           email: newUser.email,
-          message: 'Email Verified, Please Login Now!',
+          message: 'Email Verified, You are loggedIn Now!',
         });
       }
     });
@@ -83,12 +83,7 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.registerEmail });
-
-    if (
-      user &&
-      user.password &&
-      bcrypt.compareSync(req.body.password, user.password)
-    ) {
+    if (user && user.password && bcrypt.compareSync(req.body.password, user.password)) {
       const token = signInToken(user);
       res.send({
         token,
@@ -98,6 +93,7 @@ const loginUser = async (req, res) => {
         address: user.address,
         phone: user.phone,
         image: user.image,
+        message: 'LoggedIn successfully!'
       });
     } else {
       res.status(401).send({
@@ -124,7 +120,7 @@ const forgetPassword = async (req, res) => {
       to: `${req.body.verifyEmail}`,
       subject: 'Password Reset',
       html: `<h2>Hello ${req.body.verifyEmail}</h2>
-      <p>A request has been received to change the password for your <strong>Kachabazar</strong> account </p>
+      <p>A request has been received to change the password for your <strong>Aladdin</strong> account </p>
 
         <p>This link will expire in <strong> 15 minute</strong>.</p>
 
@@ -135,7 +131,7 @@ const forgetPassword = async (req, res) => {
         <p style="margin-top: 35px;">If you did not initiate this request, please contact us immediately at support@kachabazar.com</p>
 
         <p style="margin-bottom:0px;">Thank you</p>
-        <strong>Kachabazar Team</strong>
+        <strong>Team Aladdin</strong>
              `,
     };
 
@@ -171,13 +167,9 @@ const changePassword = async (req, res) => {
     const user = await User.findOne({ email: req.body.email });
     if (!user.password) {
       return res.send({
-        message:
-          'For change password,You need to sign in with email & password!',
+        message: 'For change password,You need to sign in with email & password!',
       });
-    } else if (
-      user &&
-      bcrypt.compareSync(req.body.currentPassword, user.password)
-    ) {
+    } else if (user && bcrypt.compareSync(req.body.currentPassword, user.password)) {
       user.password = bcrypt.hashSync(req.body.newPassword);
       await user.save();
       res.send({
@@ -255,28 +247,15 @@ const getUserById = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (user) {
-      user.name = req.body.name;
-      user.email = req.body.email;
-      user.address = req.body.address;
-      user.phone = req.body.phone;
-      user.image = req.body.image;
-      const updatedUser = await user.save();
-      const token = signInToken(updatedUser);
-      res.send({
-        token,
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        address: updatedUser.address,
-        phone: updatedUser.phone,
-        image: updatedUser.image,
-      });
+    const updatedUser = await User.updateOne({ _id: req.params.id }, { ...req.body });
+    if (updatedUser?.matchedCount === 1) {
+      res.status(200).json({ message: 'User updated successfully' });
+    } else {
+      res.status(400).json({ message: 'Something went wrong...' });
     }
   } catch (err) {
     res.status(404).send({
-      message: 'Your email is not valid!',
+      message: err.message,
     });
   }
 };

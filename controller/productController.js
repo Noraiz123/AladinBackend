@@ -1,13 +1,14 @@
 const Product = require('../models/Product');
-const Sku = require('../models/Product');
-const paginationHandler  = require('../utils/pagination');
+const Sku = require('../models/Sku');
+const paginationHandler = require('../utils/pagination');
+const convertToSlug = require('../utils/slug');
 
 const addProduct = async (req, res) => {
   try {
-    const { sku } = req.body;
-    const newProduct = await Product.create(req.body);
-    if (sku) {
-      const updatedSku = sku.map((e) => ({ ...e, product: newProduct._id }));
+    const { skus, title } = req.body;
+    const newProduct = await Product.create({ ...req.body, slug: convertToSlug(title) });
+    if (skus) {
+      const updatedSku = skus.map((e) => ({ ...e, product: newProduct._id }));
       await Sku.insertMany(updatedSku);
     }
     res.status(200).send({
@@ -60,7 +61,7 @@ const getDiscountedProducts = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
   try {
-    const { sort_by } = req.query;
+    const { sort_by, search_keyword } = req.query;
     const { perPage, pageNo, startIndex } = paginationHandler(req);
     let sort = -1;
     if (sort_by && sort_by === 'highest') {
@@ -68,13 +69,27 @@ const getAllProducts = async (req, res) => {
     } else {
       sort = 1;
     }
+    query = {
+      title: { $regex: search_keyword || '', $options: 'i' },
+    };
     const total = await Product.countDocuments({});
     const products = await Product.aggregate([
+      {
+        $match: query,
+      },
       {
         $skip: startIndex,
       },
       {
         $limit: perPage,
+      },
+      {
+        $lookup: {
+          from: 'skus',
+          localField: '_id',
+          foreignField: 'product',
+          as: 'skus',
+        },
       },
       {
         $lookup: {
@@ -103,7 +118,7 @@ const getAllProducts = async (req, res) => {
       {
         $addFields: {
           sale_price: {
-            $subtract: ['$price' , { $divide: [{$multiply: ['$price', '$discount']},100 ]}],
+            $subtract: ['$price', { $divide: [{ $multiply: ['$price', '$discount'] }, 100] }],
           },
         },
       },
@@ -112,7 +127,7 @@ const getAllProducts = async (req, res) => {
           price: sort,
         },
       },
-    ])
+    ]);
     res.send({ data: products, currentPage: pageNo, totalPages: Math.ceil(total / perPage) });
   } catch (err) {
     res.status(500).send({
@@ -137,8 +152,38 @@ const getStockOutProducts = async (req, res) => {
 
 const getProductBySlug = async (req, res) => {
   try {
-    const product = await Product.findOne({ slug: req.params.slug });
-    res.send(product);
+    const product = await Product.aggregate([
+      {
+        $match: { slug: req.params.slug },
+      },
+      {
+        $limit: 1,
+      },
+      {
+        $lookup: {
+          from: 'skus',
+          localField: '_id',
+          foreignField: 'product',
+          as: 'skus',
+        },
+      },
+      {
+        $lookup: {
+          from: 'sellers',
+          localField: 'seller',
+          foreignField: '_id',
+          as: 'seller',
+        },
+      },
+      {
+        $addFields: {
+          sale_price: {
+            $subtract: ['$price', { $divide: [{ $multiply: ['$price', '$discount'] }, 100] }],
+          },
+        },
+      },
+    ]);
+    res.send(product[0]);
   } catch (err) {
     res.status(500).send({
       message: `Slug problem, ${err.message}`,

@@ -36,6 +36,11 @@ const sellerSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    approved: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
   },
   {
     timestamps: true,

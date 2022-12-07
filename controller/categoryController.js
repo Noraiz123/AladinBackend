@@ -29,9 +29,6 @@ const addAllCategory = async (req, res) => {
 
 const getShowingCategory = async (req, res) => {
   try {
-    // const categories = await Category.find({ status: 'Show' }).sort({
-    //   _id: -1,
-    // });
     const categories = await Category.aggregate([
       {
         $match: { status: 'Show' }
@@ -60,7 +57,6 @@ const getShowingCategory = async (req, res) => {
 
 const getAllCategory = async (req, res) => {
   try {
-    // const categories = await Category.find({}).sort({ _id: -1 });
     const categories = await Category.aggregate([
       {
         $lookup: {

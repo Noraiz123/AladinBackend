@@ -19,7 +19,7 @@ const {
 } = require('../config/others');
 
 //verify email
-router.post('/verify-email', emailVerificationLimit, verifyEmailAddress);
+router.post('/verify-email', verifyEmailAddress);
 
 //register a user
 router.post('/register/:token', registerUser);

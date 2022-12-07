@@ -10,8 +10,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    address: {
-      type: String,
+    addresses: {
+      type: [{title: String, country: String, address1: String, address2: String, state: String, city: String, zip: String }],
       required: false,
     },
     country: {

@@ -21,7 +21,7 @@ const skuSchema = new mongoose.Schema(
     },
     price: {
       type: String,
-      required: true,
+      required: false,
     },
     quantity: {
       type: Number,
